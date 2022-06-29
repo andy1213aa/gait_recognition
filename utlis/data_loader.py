@@ -52,7 +52,7 @@ class OU_MVLP_triplet(GenericTFLoader):
         data_set = data_set.map(self.parse, num_parallel_calls=AUTOTUNE)
         data_set = data_set.cache()
         data_set = data_set.shuffle(
-            64, reshuffle_each_iteration=self._config['training_info']['shuffle'])
+            10000, reshuffle_each_iteration=self._config['training_info']['shuffle'])
         data_batch = data_set.batch(
             GLOBAL_BATCH_SIZE, drop_remainder=True)
         data_batch = data_batch.prefetch(buffer_size=AUTOTUNE)
@@ -75,7 +75,7 @@ class OU_MVLP_triplet(GenericTFLoader):
 
         imgs = tf.io.decode_raw(imgs, tf.float32)
         imgs = tf.reshape(imgs,  (self._config['resolution']['k'], 128, 88, 3))
-        imgs = (imgs-127.5)/127.5
+        imgs = imgs /255.
 
         subject = tf.io.decode_raw(subject, tf.float32)
         subject = tf.reshape(subject, (4,))

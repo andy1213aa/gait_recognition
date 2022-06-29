@@ -5,6 +5,15 @@ import os
 from shutil import copytree, copyfile
 from pathlib import Path
 
+# Dont show warning about:
+# WARNING:absl:Found untraced functions such as conv1_1_layer_call_fn, conv1_1_layer_call_and_return_conditional_losses, _jit_compiled_convolution_op, 
+# leakyReLU1_1_layer_call_fn, leakyReLU1_1_layer_call_and_return_conditional_losses 
+# while saving (showing 5 of 60). These functions will not be directly callable after loading.
+# >>>>>>
+import absl.logging
+absl.logging.set_verbosity(absl.logging.ERROR)
+# <<<<<<
+
 class Save_Model(tf.keras.callbacks.Callback):
     def __init__(self, GaitNet, info, mode='min', save_weights_only=False):
         super(Save_Model, self).__init__()

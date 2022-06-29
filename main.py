@@ -16,6 +16,8 @@ from utlis.config.data_info import OU_MVLP_triplet_train, training_info
 
 def main():
 
+
+
     def reduce_dict(d: dict):
         """ inplace reduction of items in dictionary d """
         return {
@@ -33,21 +35,17 @@ def main():
         
         imgs = tf.reshape(imgs, (imgs.shape[0]*imgs.shape[1], imgs.shape[2], imgs.shape[3], imgs.shape[4]))
         subject = tf.reshape(subject, (subject.shape[0]*subject.shape[1], ))
-        print(imgs.shape)
-        print(subject.shape)
         result = {}
 
-        with tf.GradientTape(persistent=True) as tape:
-
+        with tf.GradientTape() as tape:
             
             # calcluate GaitSimpleNet loss
             imgs_embedding = GaitSimpleNet(imgs, training=True)
             
-            
             triplet_loss = GaitSimpleNet_Loss(imgs_embedding, subject)
          
 
-            result.update({'loss_D/triplet_loss': triplet_loss})
+        result.update({'loss_D/triplet_loss': triplet_loss})
 
         GaitSimpleNet_grad = tape.gradient(triplet_loss, GaitSimpleNet.trainable_variables)
 
@@ -133,6 +131,7 @@ def main():
                 imagesCombine[y*h:(y+1)*h, x*w:(x+1)*w] = images[x+y*row]
         return imagesCombine
 
+    # def test_accuracy(embedding, label):
 
 
     data_loader = create_training_data('OU_MVLP_triplet')
@@ -140,14 +139,20 @@ def main():
 
     with data_loader.strategy.scope():
   
-        GaitSimpleNet = GaitNet().model((128, 88))
-    GaitSimpleNet_optimizer = tf.keras.optimizers.Adam(lr=2e-4, decay=1e-4)
-  
+        # GaitSimpleNet = GaitNet(32).model((128, 88, 3))
+        mode = 'gait_recognition'
+        date = '2022_6_28_11_8'
+        GaitSimpleNet = tf.keras.models.load_model(f'/home/aaron/Desktop/Aaron/College-level_Applied_Research/gait_log/{mode}/{date}/GaitNet/trained_ckpt')
+     
+    
+        GaitSimpleNet_optimizer = tf.keras.optimizers.Adam(lr=1e-4, decay=1e-4)
+        GaitSimpleNet.compile(optimizer = GaitSimpleNet_optimizer)
+
     log_path = training_info['save_model']['logdir']
     save_model = Save_Model(GaitSimpleNet, info = training_info)
     summary_writer = tf.summary.create_file_writer(f'{log_path}/{save_model.startingDate}')
     iteration = 0
-    while iteration < 5000:
+    while iteration < 2000:
         for step, batch in enumerate(training_batch):
             
                 
@@ -165,14 +170,15 @@ def main():
             #     tf.summary.scalar('disRealLoss', dis_real_loss, GaitSimpleNet_optimizer.iterations)
             #     tf.summary.scalar('disFakeLoss', dis_fake_loss, GaitSimpleNet_optimizer.iterations)
 
-                tf.summary.scalar('triplet_loss', triplet_loss, iteration)
+                tf.summary.scalar('triplet_loss', triplet_loss, GaitSimpleNet_optimizer.iterations)
             #     tf.summary.scalar('genLoss', gen_fake_loss, generator_optimizer.iterations)
             #     tf.summary.scalar('disparate', disparate, generator_optimizer.iterations)
             
         print(f'Epoch: {iteration:6} Triplet_loss: {triplet_loss:5}')
         # print(f'Epoch: {iteration:6} Batch: {step:3} Disparate:{disparate:4.5} G_loss: {gen_fake_loss:4.5} D_real_loss: {dis_real_loss:4.5} D_fake_loss: {dis_fake_loss:4.5}')
         iteration += 1
-
+        
+        
         # if generator_optimizer.iterations % 10 == 0:
         #     encode_angle1 = encoder(batch_images_ang1, training = False)
         #     view_transform = view_transform_layer([encode_angle1, batch_angles])
